@@ -1,4 +1,4 @@
-package com.arny.weatherly.ui.theme
+package com.arny.weatherly.presentation.theme
 
 import androidx.compose.ui.graphics.Color
 

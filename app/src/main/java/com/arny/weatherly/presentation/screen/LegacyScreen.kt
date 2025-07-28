@@ -1,4 +1,4 @@
-package com.arny.weatherly
+package com.arny.weatherly.presentation.screen
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -13,7 +14,6 @@ import androidx.compose.ui.unit.sp
 fun MainScreen() {
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
     ) {
         Column(
             modifier = Modifier
@@ -68,4 +68,10 @@ fun MainScreen() {
             }
         }
     }
+}
+
+@Preview
+@Composable
+fun MainScreenPreview() {
+    MainScreen()
 }
