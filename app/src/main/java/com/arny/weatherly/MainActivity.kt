@@ -6,7 +6,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.arny.weatherly.presentation.navigation.AppNavHost
 import com.arny.weatherly.presentation.theme.WeatherlyTheme
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -14,6 +16,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             WeatherlyTheme {
                 AppNavHost()
+                val apiKey = BuildConfig.API_KEY
             }
         }
     }

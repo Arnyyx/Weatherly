@@ -175,7 +175,7 @@ fun ForecastItem(
 
         Box(
             modifier = Modifier
-                .width(80.dp)
+                .width(60.dp)
                 .height(4.dp)
                 .background(
                     Color(0xFFFFA500),

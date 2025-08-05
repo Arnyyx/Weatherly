@@ -1,6 +1,7 @@
 package com.arny.weatherly.presentation.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -27,7 +28,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun AQICard(cardColor: Color) {
+fun AQICard(
+    aqiValue: Int,
+    cardColor: Color,
+    onAQIClick: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -45,7 +50,6 @@ fun AQICard(cardColor: Color) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // AQI icon with green color (good air quality)
                 Box(
                     modifier = Modifier
                         .size(32.dp)
@@ -61,7 +65,7 @@ fun AQICard(cardColor: Color) {
                 }
 
                 Text(
-                    text = "AQI 39",
+                    text = "AQI $aqiValue",
                     color = Color.Black,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Medium
@@ -69,6 +73,8 @@ fun AQICard(cardColor: Color) {
             }
 
             Row(
+                modifier = Modifier
+                    .clickable(onClick = onAQIClick),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -94,6 +100,10 @@ fun AQICardPreview() {
     Box(
         modifier = Modifier.padding(horizontal = 24.dp)
     ) {
-        AQICard(cardColor = Color.White)
+        AQICard(
+            aqiValue = 40,
+            cardColor = Color.White,
+            onAQIClick = { /* Handle click in preview */ }
+        )
     }
 }

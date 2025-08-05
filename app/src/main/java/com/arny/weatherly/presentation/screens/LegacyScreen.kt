@@ -1,4 +1,4 @@
-package com.arny.weatherly.presentation.screen
+package com.arny.weatherly.presentation.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -11,7 +11,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun MainScreen() {
+fun LegacyScreen() {
     Surface(
         modifier = Modifier.fillMaxSize(),
     ) {
@@ -72,6 +72,6 @@ fun MainScreen() {
 
 @Preview
 @Composable
-fun MainScreenPreview() {
-    MainScreen()
+fun LegacyScreenPreview() {
+    LegacyScreen()
 }
