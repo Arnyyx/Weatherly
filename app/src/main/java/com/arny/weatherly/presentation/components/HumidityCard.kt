@@ -12,7 +12,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,34 +19,33 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.arny.weatherly.domain.model.WeatherResponse
 
 @Composable
-fun HumidityCard(modifier: Modifier = Modifier, cardColor: Color) {
+fun HumidityCard(
+    weatherData: WeatherResponse?,
+    modifier: Modifier = Modifier
+) {
     Card(
         modifier = modifier.clip(RoundedCornerShape(16.dp)),
-        colors = CardDefaults.cardColors(containerColor = cardColor)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
                 text = "Humidity",
-                color = Color.Gray,
                 fontSize = 14.sp
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "82%",
-                color = Color.Black,
+                text = weatherData?.current?.humidity?.toString()?.let { "$it%" } ?: "-",
                 fontSize = 28.sp,
-                fontWeight = FontWeight.Medium
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -58,6 +56,8 @@ fun HumidityCard(modifier: Modifier = Modifier, cardColor: Color) {
             ) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     val strokeWidth = 8.dp.toPx()
+                    val humidity = weatherData?.current?.humidity?.toFloat() ?: 0f
+                    val sweepAngle = 270f * (humidity / 100f)
 
                     // Background arc
                     drawArc(
@@ -65,16 +65,16 @@ fun HumidityCard(modifier: Modifier = Modifier, cardColor: Color) {
                         startAngle = 135f,
                         sweepAngle = 270f,
                         useCenter = false,
-                        style = Stroke(width = strokeWidth)
+                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
                     )
 
-                    // Humidity arc (82%)
+                    // Humidity arc
                     drawArc(
                         color = Color.Blue,
                         startAngle = 135f,
-                        sweepAngle = 270f * 0.82f,
+                        sweepAngle = sweepAngle,
                         useCenter = false,
-                        style = Stroke(width = strokeWidth)
+                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
                     )
                 }
 
@@ -87,10 +87,4 @@ fun HumidityCard(modifier: Modifier = Modifier, cardColor: Color) {
             }
         }
     }
-}
-
-@Preview
-@Composable
-fun HumidityCardPreview() {
-    HumidityCard(cardColor = Color.White)
 }
