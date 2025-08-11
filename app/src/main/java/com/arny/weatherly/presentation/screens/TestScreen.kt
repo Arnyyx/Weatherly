@@ -1,207 +1,202 @@
 package com.arny.weatherly.presentation.screens
 
+import android.content.Intent
 import android.util.Log
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import android.provider.Settings
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.rememberAsyncImagePainter
-import com.arny.weatherly.domain.model.CurrentWeather
-import com.arny.weatherly.domain.model.DailyWeather
-import com.arny.weatherly.domain.model.HourlyWeather
-import com.arny.weatherly.domain.model.WeatherResponse
+import com.arny.weatherly.presentation.states.LocationState
+import com.arny.weatherly.presentation.states.Response
+import com.arny.weatherly.presentation.states.Warning
 import com.arny.weatherly.presentation.states.WeatherState
+import com.arny.weatherly.presentation.viewmodels.LocationViewModel
 import com.arny.weatherly.presentation.viewmodels.WeatherViewModel
-import java.text.SimpleDateFormat
-import java.util.*
 
 @Composable
 fun TestScreen(
-    viewModel: WeatherViewModel = hiltViewModel()
+    locationViewModel: LocationViewModel = hiltViewModel(),
+    weatherViewModel: WeatherViewModel = hiltViewModel()
 ) {
-    LaunchedEffect(Unit) {
-        viewModel.getWeather(21.015241982152446, 105.8257341637274)
+    val locationState by locationViewModel.locationState.collectAsState()
+    val weatherState by weatherViewModel.weatherState.collectAsState()
+    val context = LocalContext.current
+
+    // Fetch weather when location is successfully retrieved
+    LaunchedEffect(locationState) {
+        Log.d("TestScreen", "locationState: $locationState")
+        when (val response = locationState.locationState) {
+            is Response.Success -> {
+                response.data.let { location ->
+                    weatherViewModel.getWeather(location.latitude, location.longitude)
+                }
+            }
+
+            else -> Unit
+        }
     }
-    val weatherState by viewModel.weatherState.collectAsState()
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
     ) {
-        when (weatherState) {
-            is WeatherState.Loading -> {
-                Log.d("TestScreen", "Loading")
-                CircularProgressIndicator()
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Display warnings if any
+            locationState.locationState.let { response ->
+                if (response is Response.Success) {
+                    response.warning?.let { warning ->
+                        WarningMessage(warning)
+                    }
+                }
             }
 
-            is WeatherState.Success -> {
-                Log.d("TestScreen", "Success")
-                val weatherData = (weatherState as WeatherState.Success).weather
-                WeatherContent(weatherData)
+            Button(onClick = { locationViewModel.fetchLocation(context) }) {
+                Text("Fetch Location")
             }
 
-            is WeatherState.Error -> {
-                Log.d("TestScreen", "Error")
-                Text(
-                    text = (weatherState as WeatherState.Error).message,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
+            // Display location information
+            LocationInfo(locationState)
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Display weather information
+            WeatherInfo(weatherState)
         }
     }
 }
 
 @Composable
-fun WeatherContent(data: WeatherResponse) {
-    LazyColumn(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        item {
-            Text(
-                text = "Weather in ${data.timezone}",
-                style = MaterialTheme.typography.headlineMedium
-            )
-        }
-        data.current?.let { current ->
-            item {
-                CurrentWeatherCard(current)
-            }
-        }
-        data.hourly?.let { hourly ->
-            item {
-                Text(
-                    text = "Hourly Forecast",
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(top = 16.dp)
-                )
-            }
-            items(hourly.take(24)) { hour ->
-                HourlyWeatherRow(hour)
-            }
-        }
-        data.daily?.let { daily ->
-            item {
-                Text(
-                    text = "Daily Forecast",
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(top = 16.dp)
-                )
-            }
-            items(daily.take(7)) { day ->
-                DailyWeatherRow(day)
-            }
-        }
-    }
-}
-
-@Composable
-fun CurrentWeatherCard(current: CurrentWeather) {
+fun WarningMessage(warning: Warning) {
+    val context = LocalContext.current
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
+            .padding(8.dp)
+            .clickable {
+                when (warning) {
+                    Warning.NoInternet -> {
+                        context.startActivity(Intent(Settings.ACTION_WIFI_SETTINGS))
+                    }
+
+                    Warning.LocationPermissionDenied -> {
+                        context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            data = android.net.Uri.fromParts("package", context.packageName, null)
+                        })
+                    }
+
+                    Warning.LocationDisabled -> {
+                        context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                    }
+                }
+            },
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer
+        )
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            current.weather.firstOrNull()?.let { weather ->
-                Image(
-                    painter = rememberAsyncImagePainter("https://openweathermap.org/img/wn/${weather.icon}@2x.png"),
-                    contentDescription = "Weather icon",
-                    modifier = Modifier.size(64.dp)
+        Text(
+            text = when (warning) {
+                Warning.NoInternet -> "No internet connection"
+                Warning.LocationPermissionDenied -> "Location permission denied"
+                Warning.LocationDisabled -> "Location services disabled"
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            color = MaterialTheme.colorScheme.error,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+fun LocationInfo(locationState: LocationState) {
+    when (val response = locationState.locationState) {
+        is Response.Loading -> {
+            CircularProgressIndicator()
+            Text(
+                text = "Fetching location...",
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+
+        is Response.Success -> {
+            response.data.let { location ->
+                Text(
+                    text = "Location: ${location.city}",
+                    style = MaterialTheme.typography.headlineSmall
                 )
                 Text(
-                    text = weather.description.replaceFirstChar { it.uppercase() },
+                    text = "Latitude: ${location.latitude}",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Text(
+                    text = "Longitude: ${location.longitude}",
                     style = MaterialTheme.typography.bodyLarge
                 )
             }
+        }
+
+        is Response.Error -> {
             Text(
-                text = "Temperature: ${"%.1f".format(current.temp)}°C",
+                text = "Error: ${response.errorMessage}",
+                color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyLarge
             )
-            Text(
-                text = "Feels like: ${"%.1f".format(current.feels_like)}°C",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Text(
-                text = "Humidity: ${current.humidity}%",
-                style = MaterialTheme.typography.bodyMedium
-            )
         }
+
+        Response.Idle -> {}
     }
 }
 
 @Composable
-fun HourlyWeatherRow(hour: HourlyWeather) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(hour.dt * 1000)),
-            style = MaterialTheme.typography.bodyMedium
-        )
-        hour.weather.firstOrNull()?.let { weather ->
-            Image(
-                painter = rememberAsyncImagePainter("https://openweathermap.org/img/wn/${weather.icon}@2x.png"),
-                contentDescription = "Weather icon",
-                modifier = Modifier.size(32.dp)
+fun WeatherInfo(weatherState: WeatherState) {
+    when (val response = weatherState.weatherState) {
+        is Response.Loading -> {
+            CircularProgressIndicator()
+            Text(
+                text = "Fetching weather...",
+                modifier = Modifier.padding(top = 8.dp)
             )
         }
-        Text(
-            text = "${"%.1f".format(hour.temp)}°C",
-            style = MaterialTheme.typography.bodyMedium
-        )
-        Text(
-            text = "PoP: ${"%.0f".format(hour.pop * 100)}%",
-            style = MaterialTheme.typography.bodyMedium
-        )
-    }
-}
 
-@Composable
-fun DailyWeatherRow(day: DailyWeather) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = SimpleDateFormat("EEE, dd MMM", Locale.getDefault()).format(Date(day.dt * 1000)),
-            style = MaterialTheme.typography.bodyMedium
-        )
-        day.weather.firstOrNull()?.let { weather ->
-            Image(
-                painter = rememberAsyncImagePainter("https://openweathermap.org/img/wn/${weather.icon}@2x.png"),
-                contentDescription = "Weather icon",
-                modifier = Modifier.size(32.dp)
+        is Response.Success -> {
+            response.data.let { weather ->
+                Text(
+                    text = "Weather: ${weather.current?.rain}",
+                    style = MaterialTheme.typography.headlineSmall
+                )
+                Text(
+                    text = "Temperature: ${weather.current?.temp}°C",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Text(
+                    text = "Humidity: ${weather.current?.humidity}%",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+        }
+
+        is Response.Error -> {
+            Text(
+                text = "Error: ${response.errorMessage}",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyLarge
             )
         }
-        Text(
-            text = "${"%.1f".format(day.temp.max)}/${"%.1f".format(day.temp.min)}°C",
-            style = MaterialTheme.typography.bodyMedium
-        )
-        Text(
-            text = "PoP: ${"%.0f".format(day.pop * 100)}%",
-            style = MaterialTheme.typography.bodyMedium
-        )
+
+        is Response.Idle -> {}
     }
 }

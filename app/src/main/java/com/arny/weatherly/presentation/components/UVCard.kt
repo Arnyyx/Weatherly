@@ -5,31 +5,54 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
+import com.arny.weatherly.domain.model.WeatherResponse
 
 @Composable
-fun UVCard(modifier: Modifier = Modifier, cardColor: Color) {
+fun UVCard(
+    weatherData: WeatherResponse?,
+    modifier: Modifier = Modifier,
+) {
+    // Get UV index from weather data
+    val uvIndex = weatherData?.current?.uvi?.toFloat()
+    val uvValue = uvIndex ?: 0f
+
+    // Determine UV level text and color based on UV index
+    val (uvLevelText, uvLevelColor) = when {
+        uvValue <= 2f -> "Low" to Color(0xFF4CAF50)
+        uvValue <= 5f -> "Moderate" to Color(0xFFFFEB3B)
+        uvValue <= 7f -> "High" to Color(0xFFFF9800)
+        uvValue <= 10f -> "Very High" to Color(0xFFFF5722)
+        else -> "Extreme" to Color(0xFF9C27B0)
+    }
+
+    // Calculate arc sweep angle (UV index typically ranges from 0 to 12+)
+    val maxUV = 12f
+    val normalizedUV = (uvValue / maxUV).coerceIn(0f, 1f)
+    val arcSweepAngle = normalizedUV * 270f
+
     Card(
         modifier = modifier.clip(RoundedCornerShape(16.dp)),
-        colors = CardDefaults.cardColors(containerColor = cardColor)
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -37,7 +60,6 @@ fun UVCard(modifier: Modifier = Modifier, cardColor: Color) {
         ) {
             Text(
                 text = "UV",
-                color = Color.Gray,
                 fontSize = 14.sp,
                 modifier = Modifier.align(Alignment.Start)
             )
@@ -45,8 +67,8 @@ fun UVCard(modifier: Modifier = Modifier, cardColor: Color) {
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Weak",
-                color = Color.Black,
+                text = uvLevelText,
+                color = uvLevelColor,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier.align(Alignment.Start)
@@ -60,41 +82,65 @@ fun UVCard(modifier: Modifier = Modifier, cardColor: Color) {
             ) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     val strokeWidth = 8.dp.toPx()
-                    val radius = size.minDimension / 2 - strokeWidth / 2
 
                     // Background arc
                     drawArc(
-                        color = Color.Gray.copy(alpha = 0.2f),
+                        color = Color.Gray.copy(alpha = 0.3f),
                         startAngle = 135f,
                         sweepAngle = 270f,
                         useCenter = false,
-                        style = Stroke(width = strokeWidth)
+                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
                     )
 
-                    // UV level arc (low level = green to yellow)
-                    drawArc(
-                        brush = Brush.sweepGradient(
-                            colors = listOf(
-                                Color.Green,
-                                Color.Yellow,
-                                Color.Red,
-                                Color.Magenta
-                            )
-                        ),
-                        startAngle = 135f,
-                        sweepAngle = 54f, // 20% of 270 degrees for level 2
-                        useCenter = false,
-                        style = Stroke(width = strokeWidth)
-                    )
+                    // UV level arc with gradient colors
+                    if (arcSweepAngle > 0f) {
+                        drawArc(
+                            brush = Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0xFF4CAF50), // Low (Green)
+                                    Color(0xFFFFEB3B), // Moderate (Yellow)
+                                    Color(0xFFFF9800), // High (Orange)
+                                    Color(0xFFFF5722), // Very High (Red)
+                                    Color(0xFF9C27B0),  // Extreme (Purple)
+                                ),
+                                start = Offset(0f, size.height),
+                                end = Offset(size.width, size.height),
+                            ),
+                            startAngle = 135f,
+                            sweepAngle = arcSweepAngle,
+                            useCenter = false,
+                            style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                        )
+                    }
                 }
 
+                // UV Index number in the center
                 Text(
-                    text = "2",
-                    color = Color.Black,
+                    text = if (uvIndex != null) uvValue.toInt().toString() else "--",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Additional info text
+            Text(
+                text = if (uvIndex != null) {
+                    when {
+                        uvValue <= 2f -> "Minimal protection needed"
+                        uvValue <= 5f -> "Some protection required"
+                        uvValue <= 7f -> "Protection essential"
+                        uvValue <= 10f -> "Extra protection required"
+                        else -> "Avoid being outside"
+                    }
+                } else {
+                    "No data available"
+                },
+                fontSize = 10.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
@@ -102,5 +148,7 @@ fun UVCard(modifier: Modifier = Modifier, cardColor: Color) {
 @Preview
 @Composable
 fun UVCardPreview() {
-    UVCard(cardColor = Color.White)
+    UVCard(
+        weatherData = null,
+    )
 }

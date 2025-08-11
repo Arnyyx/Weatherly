@@ -7,9 +7,9 @@ data class WeatherResponse(
     val lon: Double,
     val timezone: String,
     val timezone_offset: Int,
-    val current: CurrentWeather?,
+    val current: CurrentWeather,
     val hourly: List<HourlyWeather>?,
-    val daily: List<DailyWeather>?
+    val daily: List<DailyWeather>
 )
 
 data class CurrentWeather(
@@ -17,7 +17,7 @@ data class CurrentWeather(
     val sunrise: Long?,
     val sunset: Long?,
     val temp: Double,
-    val feels_like: Double,
+    val feels_like: Float,
     val pressure: Int,
     val humidity: Int,
     val dew_point: Double,

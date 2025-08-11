@@ -14,7 +14,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Eco
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,14 +29,12 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun AQICard(
     aqiValue: Int,
-    cardColor: Color,
     onAQIClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp)),
-        colors = CardDefaults.cardColors(containerColor = cardColor)
     ) {
         Row(
             modifier = Modifier
@@ -102,7 +99,6 @@ fun AQICardPreview() {
     ) {
         AQICard(
             aqiValue = 40,
-            cardColor = Color.White,
             onAQIClick = { /* Handle click in preview */ }
         )
     }

@@ -10,9 +10,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,33 +19,33 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
+import com.arny.weatherly.domain.model.WeatherResponse
 
 @Composable
-fun PressureCard(modifier: Modifier = Modifier, cardColor: Color) {
+fun PressureCard(
+    weatherData: WeatherResponse?,
+    modifier: Modifier = Modifier
+) {
     Card(
         modifier = modifier.clip(RoundedCornerShape(16.dp)),
-        colors = CardDefaults.cardColors(containerColor = cardColor)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
                 text = "Pressure",
-                color = Color.Gray,
                 fontSize = 14.sp
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "1000",
-                color = Color.Black,
+                text = weatherData?.current?.pressure?.toString() ?: "-",
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Medium
             )
@@ -59,6 +58,10 @@ fun PressureCard(modifier: Modifier = Modifier, cardColor: Color) {
             ) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     val strokeWidth = 8.dp.toPx()
+                    val pressure = weatherData?.current?.pressure?.toFloat() ?: 1000f
+                    // Normalize pressure (900–1100 hPa range, 1000 hPa ~ 50%)
+                    val normalizedPressure = ((pressure - 900f) / 200f).coerceIn(0f, 1f)
+                    val sweepAngle = 270f * normalizedPressure
 
                     // Background arc
                     drawArc(
@@ -66,16 +69,16 @@ fun PressureCard(modifier: Modifier = Modifier, cardColor: Color) {
                         startAngle = 135f,
                         sweepAngle = 270f,
                         useCenter = false,
-                        style = Stroke(width = strokeWidth)
+                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
                     )
 
-                    // Pressure arc (1000 mbar is normal, show as ~75%)
+                    // Pressure arc
                     drawArc(
                         color = Color.Blue,
                         startAngle = 135f,
-                        sweepAngle = 270f * 0.75f,
+                        sweepAngle = sweepAngle,
                         useCenter = false,
-                        style = Stroke(width = strokeWidth)
+                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
                     )
                 }
 
@@ -83,24 +86,17 @@ fun PressureCard(modifier: Modifier = Modifier, cardColor: Color) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Icon(
-                        imageVector = Icons.Default.ArrowDownward,
+                        imageVector = Icons.Rounded.ArrowDownward,
                         contentDescription = "Pressure",
                         tint = Color.Blue,
                         modifier = Modifier.size(20.dp)
                     )
                     Text(
-                        text = "mbar",
-                        color = Color.Gray,
+                        text = "hPa",
                         fontSize = 10.sp
                     )
                 }
             }
         }
     }
-}
-
-@Preview
-@Composable
-fun PressureCardPreview() {
-    PressureCard(cardColor = Color.White)
 }
