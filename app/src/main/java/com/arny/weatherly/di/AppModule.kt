@@ -3,13 +3,17 @@ package com.arny.weatherly.di
 import android.content.Context
 import androidx.room.Room
 import com.arny.weatherly.data.local.AppDatabase
+import com.arny.weatherly.data.local.SettingsManager
 import com.arny.weatherly.data.local.dao.LocationDao
 import com.arny.weatherly.data.local.dao.WeatherDao
+import com.arny.weatherly.data.local.datastore.UserSettingsDataStore
 import com.arny.weatherly.data.remote.LocationRepositoryImpl
+import com.arny.weatherly.data.remote.UserSettingsRepositoryImpl
 import com.arny.weatherly.data.remote.WeatherRepositoryImpl
 import com.arny.weatherly.domain.repository.LocationRepository
 import com.arny.weatherly.domain.repository.WeatherRepository
 import com.arny.weatherly.data.remote.service.OpenWeatherApiService
+import com.arny.weatherly.domain.repository.UserSettingsRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -36,9 +40,24 @@ object AppModule {
     @Provides
     fun provideWeatherRepository(
         apiService: OpenWeatherApiService,
-        weatherDao: WeatherDao
+        weatherDao: WeatherDao,
+        settingsManager: SettingsManager
     ): WeatherRepository {
-        return WeatherRepositoryImpl(apiService, weatherDao)
+        return WeatherRepositoryImpl(apiService, weatherDao, settingsManager)
+    }
+
+    @Singleton
+    @Provides
+    fun provideUserSettingsRepository(
+        userSettingsDataStore: UserSettingsDataStore
+    ): UserSettingsRepository {
+        return UserSettingsRepositoryImpl(userSettingsDataStore)
+    }
+
+    @Singleton
+    @Provides
+    fun provideUserSettingsDataStore(@ApplicationContext context: Context): UserSettingsDataStore {
+        return UserSettingsDataStore(context)
     }
 }
 

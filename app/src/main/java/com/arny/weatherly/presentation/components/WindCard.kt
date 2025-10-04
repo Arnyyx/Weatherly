@@ -65,7 +65,7 @@ fun WindCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Wind speed with unit
+            // Wind speed with weatherUnit
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {

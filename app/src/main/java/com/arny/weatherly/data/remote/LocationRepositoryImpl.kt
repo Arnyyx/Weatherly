@@ -80,8 +80,6 @@ class LocationRepositoryImpl @Inject constructor(
                     freshLocation.toEntity().copy(ttl = currentTime + TTL_DURATION_MS)
                 )
                 emit(Result.success(freshLocation))
-            } else {
-                emit(Result.failure(Exception("Unable to retrieve location")))
             }
         } catch (e: Exception) {
             emit(Result.failure(e))

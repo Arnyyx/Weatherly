@@ -26,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,20 +37,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.arny.weatherly.domain.model.UserSettings
+import com.arny.weatherly.domain.model.WeatherUnit
+import com.arny.weatherly.presentation.states.Response
+import com.arny.weatherly.presentation.viewmodels.SettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    settingsViewModel: SettingsViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit = {}
 ) {
-    var temperatureUnit by remember { mutableStateOf("°C") }
-    var windSpeedUnit by remember { mutableStateOf("Kilometres per hour (km/h)") }
-    var pressureUnit by remember { mutableStateOf("Millibar (mbar)") }
-    var updateAtNight by remember { mutableStateOf(false) }
-
-    var showTemperatureDropdown by remember { mutableStateOf(false) }
-    var showWindSpeedDropdown by remember { mutableStateOf(false) }
-    var showPressureDropdown by remember { mutableStateOf(false) }
+    val userSettings by settingsViewModel.userSettings.collectAsState()
+    var showUnitDropdown by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -83,68 +84,41 @@ fun SettingsScreen(
                 .padding(horizontal = 16.dp)
         ) {
             Spacer(modifier = Modifier.height(16.dp))
+
             // Units Section
             SectionHeader(title = "Units")
-
             Spacer(modifier = Modifier.height(16.dp))
+            when (val settingState = userSettings.settingState) {
+                is Response.Success -> {
+                    val settings = settingState.data
+                    val options = WeatherUnit.entries
+                    DropdownSettingItem(
+                        title = "Unit",
+                        selectedValue = settings.weatherUnit.value.replaceFirstChar { it.uppercase() },
+                        options = options.map { it.value.replaceFirstChar { char -> char.uppercase() } },
+                        expanded = showUnitDropdown,
+                        onExpandedChange = { showUnitDropdown = it },
+                        onSelectionChange = { selected ->
+                            val newUnit = WeatherUnit.valueOf(selected.uppercase())
+                            settingsViewModel.onSettingsChanged(settings.copy(weatherUnit = newUnit))
+                        }
+                    )
+                }
 
-            // Temperature units
-            DropdownSettingItem(
-                title = "Temperature units",
-                selectedValue = temperatureUnit,
-                options = listOf("°C", "°F"),
-                expanded = showTemperatureDropdown,
-                onExpandedChange = { showTemperatureDropdown = it },
-                onSelectionChange = { temperatureUnit = it }
-            )
+                else -> {}
+            }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Wind speed units
-            DropdownSettingItem(
-                title = "Wind speed units",
-                selectedValue = windSpeedUnit,
-                options = listOf(
-                    "Kilometres per hour (km/h)",
-                    "Miles per hour (mph)",
-                    "Metres per second (m/s)",
-                    "Knots"
-                ),
-                expanded = showWindSpeedDropdown,
-                onExpandedChange = { showWindSpeedDropdown = it },
-                onSelectionChange = { windSpeedUnit = it }
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Atmospheric pressure units
-            DropdownSettingItem(
-                title = "Atmospheric pressure units",
-                selectedValue = pressureUnit,
-                options = listOf(
-                    "Millibar (mbar)",
-                    "Inches of mercury (inHg)",
-                    "Hectopascal (hPa)",
-                    "Kilopascal (kPa)"
-                ),
-                expanded = showPressureDropdown,
-                onExpandedChange = { showPressureDropdown = it },
-                onSelectionChange = { pressureUnit = it }
-            )
 
             Spacer(modifier = Modifier.height(32.dp))
 
             // Other settings Section
             SectionHeader(title = "Other settings")
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Update at night automatically
             SwitchSettingItem(
-                title = "Update at night automatically",
-                subtitle = "Update weather info between 23:00 and 07:00",
-                checked = updateAtNight,
-                onCheckedChange = { updateAtNight = it }
+                "Dark mode",
+                "Enable dark mode",
+                checked = false,
+                onCheckedChange = { /* Handle dark mode switch */ }
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -197,7 +171,6 @@ fun DropdownSettingItem(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-//                    .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
                     .menuAnchor()
                     .padding(vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,

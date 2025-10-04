@@ -1,10 +1,12 @@
 package com.arny.weatherly.data.remote
 
+import com.arny.weatherly.data.local.SettingsManager
 import com.arny.weatherly.data.local.dao.WeatherDao
 import com.arny.weatherly.data.local.entity.toDomain
 import com.arny.weatherly.data.remote.dto.toDomain
 import com.arny.weatherly.data.remote.service.OpenWeatherApiService
 import com.arny.weatherly.domain.model.Weather
+import com.arny.weatherly.domain.model.WeatherUnit
 import com.arny.weatherly.domain.model.toEntity
 import com.arny.weatherly.domain.repository.WeatherRepository
 import kotlinx.coroutines.Dispatchers
@@ -15,7 +17,8 @@ import javax.inject.Inject
 
 class WeatherRepositoryImpl @Inject constructor(
     private val apiService: OpenWeatherApiService,
-    private val weatherDao: WeatherDao
+    private val weatherDao: WeatherDao,
+    private val settingsManager: SettingsManager
 ) : WeatherRepository {
     companion object {
         private const val TTL_DURATION_MS = 30 * 60 * 1000L // 30 phút
@@ -23,6 +26,12 @@ class WeatherRepositoryImpl @Inject constructor(
 
     override suspend fun getWeather(latitude: Double, longitude: Double): Flow<Result<Weather>> =
         flow {
+            val settings = settingsManager.getCurrentSettings()
+            val units = when (settings.weatherUnit) {
+                WeatherUnit.METRIC -> "metric"
+                WeatherUnit.IMPERIAL -> "imperial"
+                else -> "standard"
+            }
             val currentTime = System.currentTimeMillis()
             // Emit cache đầu tiên
             weatherDao.getByLocation(latitude, longitude, currentTime)?.let { cached ->
@@ -31,7 +40,7 @@ class WeatherRepositoryImpl @Inject constructor(
 
             // Gọi API song song để cập nhật
             try {
-                val response = apiService.getWeather(latitude, longitude)
+                val response = apiService.getWeather(latitude, longitude, units)
                 if (response.isSuccessful) {
                     response.body()?.let { response ->
                         val weather = response.toDomain()

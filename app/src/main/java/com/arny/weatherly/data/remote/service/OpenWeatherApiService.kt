@@ -12,8 +12,8 @@ interface OpenWeatherApiService {
     suspend fun getWeather(
         @Query("lat") latitude: Double,
         @Query("lon") longitude: Double,
+        @Query("units") units: String,
         @Query("appid") appid: String = BuildConfig.API_KEY,
-        @Query("units") units: String = "metric",
     ): Response<WeatherDto>
 
     @GET("geo/1.0/direct")

@@ -71,6 +71,7 @@ import com.arny.weatherly.presentation.viewmodels.WeatherViewModel
 import com.arny.weatherly.utils.WeatherIcon
 import kotlin.math.roundToLong
 import androidx.core.net.toUri
+import com.arny.weatherly.presentation.viewmodels.SettingsViewModel
 
 @Composable
 fun HomeScreen(
