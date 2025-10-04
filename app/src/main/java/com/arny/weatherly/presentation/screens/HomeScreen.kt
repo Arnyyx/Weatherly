@@ -1,5 +1,8 @@
 package com.arny.weatherly.presentation.screens
 
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -27,10 +30,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -40,10 +47,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.arny.weatherly.domain.model.WeatherResponse
+import com.arny.weatherly.domain.model.Weather
 import com.arny.weatherly.presentation.components.AQICard
 import com.arny.weatherly.presentation.components.DailyForecastCard
 import com.arny.weatherly.presentation.components.HourlyForecastCard
@@ -54,6 +62,7 @@ import com.arny.weatherly.presentation.components.SunsetCard
 import com.arny.weatherly.presentation.components.UVCard
 import com.arny.weatherly.presentation.components.WindCard
 import com.arny.weatherly.presentation.states.LocationState
+import com.arny.weatherly.presentation.states.Message
 import com.arny.weatherly.presentation.states.Response
 import com.arny.weatherly.presentation.states.WeatherState
 import com.arny.weatherly.presentation.theme.WeatherTheme
@@ -61,6 +70,7 @@ import com.arny.weatherly.presentation.viewmodels.LocationViewModel
 import com.arny.weatherly.presentation.viewmodels.WeatherViewModel
 import com.arny.weatherly.utils.WeatherIcon
 import kotlin.math.roundToLong
+import androidx.core.net.toUri
 
 @Composable
 fun HomeScreen(
@@ -71,7 +81,6 @@ fun HomeScreen(
     onAQIClick: () -> Unit,
     onDailyForecastClick: () -> Unit,
 ) {
-
     val context = LocalContext.current
     val locationState by locationViewModel.locationState.collectAsState()
     val weatherState by weatherViewModel.weatherState.collectAsState()
@@ -121,7 +130,7 @@ private fun HomeScreenContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 24.dp)
+            .padding(horizontal = 16.dp)
             .windowInsetsPadding(WindowInsets.statusBars)
     ) {
         TopBar(onRefreshClick, onAddClick, onMenuClick)
@@ -283,20 +292,26 @@ fun LocationSection(
 
                 is Response.Success -> {
                     state.data.let { location ->
-                        Text(
-                            text = "${location.ward}, ${location.city}",
-                            fontWeight = FontWeight.Light,
-                            fontSize = 24.sp,
-                        )
+                        Column {
+                            state.warning?.message?.takeIf { it.isNotBlank() }?.let {
+                                Text(
+                                    text = it,
+                                    fontWeight = FontWeight.Light,
+                                    fontSize = 12.sp,
+                                )
+                            }
+                            Text(
+                                text = "${location.ward}, ${location.city}",
+                                fontWeight = FontWeight.Light,
+                                fontSize = 24.sp,
+                            )
+                        }
+
                     }
                 }
 
                 is Response.Error -> {
-                    Text(
-                        text = "Error: ${state.errorMessage}",
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+                    HandleMessage(state.error)
                 }
 
                 is Response.Idle -> {
@@ -311,33 +326,78 @@ fun LocationSection(
 }
 
 @Composable
+fun HandleMessage(
+    message: Message,
+    onNoInternetClick: () -> Unit = {}
+) {
+    val context = LocalContext.current
+    when (message) {
+        is Message.NoInternet -> {
+            TextButton(onClick = { onNoInternetClick }) {
+                Text(message.message)
+            }
+        }
+
+        is Message.LocationPermissionDenied -> {
+            TextButton(onClick = {
+                context.startActivity(
+                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                        data = "package:${context.packageName}".toUri()
+                    }
+                )
+            }) {
+                Text("Mở cài đặt")
+            }
+        }
+
+        is Message.LocationDisabled -> {
+            TextButton(onClick = {
+                context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+            }) {
+                Text("Bật vị trí")
+            }
+        }
+
+        else -> Unit
+    }
+}
+
+@Composable
 fun MainTemperatureSection(
-    weatherData: WeatherResponse?
+    weatherData: Weather?
 ) {
     Column(
         horizontalAlignment = Alignment.Start
     ) {
         Column {
-            Text(
-                text = weatherData?.current?.temp?.roundToLong()?.toString()?.let { "$it°" }
-                    ?: "-",
-                fontSize = 120.sp,
-                fontWeight = FontWeight.Thin,
-                lineHeight = 120.sp
-            )
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = weatherData?.current?.weather?.firstOrNull()?.description ?: "-",
+                    text = weatherData?.current?.temperature?.roundToLong()?.toString()
+                        ?.let { "$it°" }
+                        ?: "-",
+                    fontSize = 120.sp,
+                    fontWeight = FontWeight.Thin,
+                    lineHeight = 120.sp
+                )
+                WeatherIcon(
+                    iconCode = weatherData?.current?.conditions?.firstOrNull()?.icon.orEmpty(),
+                    iconSize = 70.dp
+                )
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = weatherData?.current?.conditions?.firstOrNull()?.description
+                        ?: "-",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Light
                 )
                 WeatherIcon(
-                    iconCode = weatherData?.current?.weather?.firstOrNull()?.icon.orEmpty(),
+                    iconCode = weatherData?.current?.conditions?.firstOrNull()?.icon.orEmpty(),
                     iconSize = 24.dp
                 )
             }
             Text(
-                text = weatherData?.current?.feels_like?.roundToLong()
+                text = weatherData?.current?.feelsLike?.roundToLong()
                     ?.let { "Feels like $it°" }
                     ?: "-",
                 fontSize = 20.sp,
@@ -355,9 +415,20 @@ fun FooterCard() {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "Data provided in part by ⚙ AccuWeather",
+            text = "Data provided in part by OpenWeather",
             fontSize = 14.sp,
             textAlign = TextAlign.Center
         )
     }
+}
+
+@Composable
+@Preview
+fun HomeScreenPreview() {
+    HomeScreen(
+        onAddClick = {},
+        onMenuClick = {},
+        onAQIClick = {},
+        onDailyForecastClick = {}
+    )
 }

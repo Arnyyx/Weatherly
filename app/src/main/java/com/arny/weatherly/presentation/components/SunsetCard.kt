@@ -25,7 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.arny.weatherly.domain.model.WeatherResponse
+import com.arny.weatherly.domain.model.Weather
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -34,7 +34,7 @@ import kotlin.math.sin
 
 @Composable
 fun SunsetCard(
-    weatherData: WeatherResponse?,
+    weatherData: Weather?,
     modifier: Modifier = Modifier,
 ) {
     // Lấy thời gian sunrise và sunset từ API (đơn vị: giây Unix timestamp)

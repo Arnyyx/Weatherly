@@ -33,17 +33,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.arny.weatherly.domain.model.WeatherResponse
+import com.arny.weatherly.domain.model.Weather
 import kotlin.math.cos
 import kotlin.math.sin
 
 @Composable
 fun WindCard(
-    weatherData: WeatherResponse?,
+    weatherData: Weather?,
     modifier: Modifier = Modifier,
 ) {
-    val windSpeed = weatherData?.current?.wind_speed ?: 0.0
-    val windDirection = weatherData?.current?.wind_deg ?: 0
+    val windSpeed = weatherData?.current?.windSpeed ?: 0.0
+    val windDirection = weatherData?.current?.windDirection ?: 0
 
     // Convert wind degree to direction text
     val windDirectionText = getWindDirection(windDirection)

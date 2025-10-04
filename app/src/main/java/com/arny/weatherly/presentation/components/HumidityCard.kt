@@ -23,11 +23,11 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.arny.weatherly.domain.model.WeatherResponse
+import com.arny.weatherly.domain.model.Weather
 
 @Composable
 fun HumidityCard(
-    weatherData: WeatherResponse?,
+    weatherData: Weather?,
     modifier: Modifier = Modifier
 ) {
     Card(

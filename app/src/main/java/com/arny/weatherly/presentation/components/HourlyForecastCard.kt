@@ -24,7 +24,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.arny.weatherly.domain.model.WeatherResponse
+import com.arny.weatherly.domain.model.Weather
 import com.arny.weatherly.utils.WeatherIcon
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -33,7 +33,7 @@ import kotlin.math.roundToLong
 
 @Composable
 fun HourlyForecastCard(
-    weatherData: WeatherResponse?,
+    weatherData: Weather?,
 ) {
     Card(
         modifier = Modifier
@@ -64,7 +64,8 @@ fun HourlyForecastCard(
                         val width = size.width
                         val height = size.height
 
-                        val temps = weatherData?.hourly?.take(7)?.map { it.temp } ?: List(7) { 0.0 }
+                        val temps =
+                            weatherData?.hourly?.take(7)?.map { it.temperature } ?: List(7) { 0.0 }
                         val maxTemp = temps.maxOrNull() ?: 1.0
                         val minTemp = temps.minOrNull() ?: 0.0
                         val tempRange = if (maxTemp == minTemp) 1.0 else maxTemp - minTemp
@@ -93,7 +94,7 @@ fun HourlyForecastCard(
                         verticalAlignment = Alignment.Top
                     ) {
                         val temps =
-                            weatherData?.hourly?.take(7)?.map { "${it.temp.roundToLong()}°" }
+                            weatherData?.hourly?.take(7)?.map { "${it.temperature.roundToLong()}°" }
                                 ?: List(7) { "-" }
                         temps.forEach { temp ->
                             Text(
@@ -112,8 +113,9 @@ fun HourlyForecastCard(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    val icons = weatherData?.hourly?.take(7)?.map { it.weather.firstOrNull()?.icon }
-                        ?: List(7) { null }
+                    val icons =
+                        weatherData?.hourly?.take(7)?.map { it.conditions.firstOrNull()?.icon }
+                            ?: List(7) { null }
                     icons.forEach { iconCode ->
                         WeatherIcon(
                             iconCode = iconCode.orEmpty(),
@@ -130,7 +132,7 @@ fun HourlyForecastCard(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     val winds =
-                        weatherData?.hourly?.take(7)?.map { "${it.wind_speed.roundToLong()}km/h" }
+                        weatherData?.hourly?.take(7)?.map { "${it.windSpeed.roundToLong()}km/h" }
                             ?: List(7) { "-" }
                     winds.forEach { wind ->
                         Text(
@@ -148,7 +150,10 @@ fun HourlyForecastCard(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     val times = weatherData?.hourly?.take(7)?.map {
-                        SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(it.dt * 1000))
+                        SimpleDateFormat(
+                            "HH:mm",
+                            Locale.getDefault()
+                        ).format(Date(it.timestamp * 1000))
                     } ?: List(7) { "-" }
                     times.forEachIndexed { index, time ->
                         Text(

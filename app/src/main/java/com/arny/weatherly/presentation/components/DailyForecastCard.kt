@@ -29,7 +29,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.arny.weatherly.domain.model.WeatherResponse
+import com.arny.weatherly.domain.model.Weather
 import com.arny.weatherly.utils.WeatherIcon
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -38,7 +38,7 @@ import java.util.Locale
 
 @Composable
 fun DailyForecastCard(
-    weatherData: WeatherResponse?,
+    weatherData: Weather?,
     onDailyForecastClick: () -> Unit
 ) {
     Card(
@@ -88,10 +88,10 @@ fun DailyForecastCard(
             }
             weatherData?.daily?.take(3)?.forEachIndexed { index, weather ->
                 ForecastItem(
-                    day = weather.dt.toDayString(),
-                    icon = weather.weather.getOrNull(0)?.icon.orEmpty(),
-                    lowTemp = weather.temp.min.toIntOrNullString(),
-                    highTemp = weather.temp.max.toIntOrNullString(),
+                    day = weather.timestamp.toDayString(),
+                    icon = weather.conditions.getOrNull(0)?.icon.orEmpty(),
+                    lowTemp = weather.temperature.min.toIntOrNullString(),
+                    highTemp = weather.temperature.max.toIntOrNullString(),
                     isToday = index == 0
                 )
                 if (index < 2) HorizontalDivider()

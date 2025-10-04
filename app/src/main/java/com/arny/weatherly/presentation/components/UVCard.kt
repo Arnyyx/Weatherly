@@ -26,15 +26,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.arny.weatherly.domain.model.WeatherResponse
+import com.arny.weatherly.domain.model.Weather
 
 @Composable
 fun UVCard(
-    weatherData: WeatherResponse?,
+    weatherData: Weather?,
     modifier: Modifier = Modifier,
 ) {
     // Get UV index from weather data
-    val uvIndex = weatherData?.current?.uvi?.toFloat()
+    val uvIndex = weatherData?.current?.uvIndex?.toFloat()
     val uvValue = uvIndex ?: 0f
 
     // Determine UV level text and color based on UV index

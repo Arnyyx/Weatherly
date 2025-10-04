@@ -24,11 +24,11 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.arny.weatherly.domain.model.WeatherResponse
+import com.arny.weatherly.domain.model.Weather
 
 @Composable
 fun PressureCard(
-    weatherData: WeatherResponse?,
+    weatherData: Weather?,
     modifier: Modifier = Modifier
 ) {
     Card(

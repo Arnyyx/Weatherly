@@ -24,17 +24,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.arny.weatherly.domain.model.WeatherResponse
+import com.arny.weatherly.domain.model.Weather
 import kotlin.math.cos
 import kotlin.math.sin
 
 @Composable
 fun RealFeelCard(
-    weatherData: WeatherResponse?,
+    weatherData: Weather?,
     modifier: Modifier = Modifier,
 ) {
     // Get the feels like temperature from weather data
-    val feelsLike = weatherData?.current?.feels_like
+    val feelsLike = weatherData?.current?.feelsLike
 
     val feelsLikeText = if (feelsLike != null) {
         "${feelsLike.toInt()}°"

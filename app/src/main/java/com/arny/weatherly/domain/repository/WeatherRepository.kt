@@ -1,10 +1,8 @@
 package com.arny.weatherly.domain.repository
 
-import com.arny.weatherly.domain.model.Location
-import com.arny.weatherly.domain.model.WeatherResponse
-import retrofit2.Response
-import retrofit2.http.Url
+import com.arny.weatherly.domain.model.Weather
+import kotlinx.coroutines.flow.Flow
 
 interface WeatherRepository {
-    suspend fun getWeather(latitude: Double, longitude: Double): Result<WeatherResponse>
+    suspend fun getWeather(latitude: Double, longitude: Double): Flow<Result<Weather>>
 }

@@ -1,44 +1,92 @@
 package com.arny.weatherly.data.remote
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Address
 import android.location.Geocoder
+import android.util.Log
 import androidx.core.app.ActivityCompat
+import com.arny.weatherly.data.local.dao.LocationDao
+import com.arny.weatherly.data.local.entity.toDomain
+import com.arny.weatherly.data.remote.dto.toDomain
 import com.arny.weatherly.domain.model.Location
 import com.arny.weatherly.domain.repository.LocationRepository
+import com.arny.weatherly.data.remote.service.OpenWeatherApiService
+import com.arny.weatherly.domain.model.toEntity
 import com.google.android.gms.location.CurrentLocationRequest
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationToken
 import com.google.android.gms.tasks.CancellationTokenSource
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Locale
 import javax.inject.Inject
 import kotlin.coroutines.resume
 
 class LocationRepositoryImpl @Inject constructor(
-    private val context: Context
+    private val context: Context,
+    private val apiService: OpenWeatherApiService,
+    private val locationDao: LocationDao
 ) : LocationRepository {
     private val fusedLocationClient: FusedLocationProviderClient =
         LocationServices.getFusedLocationProviderClient(context)
     private val geocoder = Geocoder(context, Locale.getDefault())
 
-    override suspend fun getLocation(): Result<Location> {
+    companion object {
+        private const val TTL_DURATION_MS = 30 * 60 * 1000L // 30 phút
+    }
+
+    override suspend fun searchCity(name: String): Result<List<Location>> {
         return try {
-            val location = getCurrentLocation() ?: getLastKnownLocation()
-            if (location != null) {
-                Result.success(location)
+            val response = apiService.searchCity(name)
+            if (response.isSuccessful) {
+                val body = response.body()
+                if (!body.isNullOrEmpty()) {
+                    val locations = body.map { it.toDomain() }
+                    Result.success(locations)
+                } else {
+                    Result.failure(Exception("No locations found"))
+                }
             } else {
-                Result.failure(Exception("Unable to retrieve location"))
+                Result.failure(Exception("API request failed with code ${response.code()}"))
             }
         } catch (e: Exception) {
+            Log.e("WeatherRepository", "Error fetching city: ${e.message}")
             Result.failure(e)
         }
     }
+
+    override suspend fun getLocation(): Flow<Result<Location>> = flow {
+        val currentTime = System.currentTimeMillis()
+
+        // Emit cached data first
+        locationDao.getLatestLocation()?.let { entity ->
+            emit(Result.success(entity.toDomain()))
+        } ?: emit(Result.failure(Exception("No cached data")))
+
+        // Fetch fresh location in parallel
+        try {
+            val freshLocation = getCurrentLocation() ?: getLastKnownLocation()
+            if (freshLocation != null) {
+                // Cache the fresh location
+                locationDao.insert(
+                    freshLocation.toEntity().copy(ttl = currentTime + TTL_DURATION_MS)
+                )
+                emit(Result.success(freshLocation))
+            } else {
+                emit(Result.failure(Exception("Unable to retrieve location")))
+            }
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
+    }.flowOn(Dispatchers.IO)
 
     // Lấy vị trí hiện tại với getCurrentLocation
     private suspend fun getCurrentLocation(): Location? {
